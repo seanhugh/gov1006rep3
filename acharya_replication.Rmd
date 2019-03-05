@@ -33,6 +33,7 @@ library(lme4)
 library(cem)
 library(latticeExtra)
 library(stringr)
+library(broom)
 
 # Need to look further into this to see what it is
 
@@ -52,7 +53,7 @@ cces.comb <- read.csv("./dataverse_files/abs-jop-cces-ind.csv", stringsAsFactors
 ## Figure 2
 
 
-```{r, echo = FALSE}
+```{r, echo = FALSE, include = FALSE}
 
 # Table 1 replication
 # The code for table 1 replication can be found in slavery-jop-replication.R:
@@ -196,10 +197,16 @@ with(subset(nes.counties, state.abb %in% st.list), plot(pslave1860, wtherm-bther
 abline(lm(I(wtherm-btherm) ~ pslave1860, weights = sample.size.bt, data = subset(nes.counties, state.abb %in% st.list)), lwd = 2, col = "#AA0000")
 #dev.off()
 
-#cairo_pdf(filename = "../figs/scatters-alt.pdf", family = "Minion Pro", height = 2.5, width = 7, pointsize = 11)
-par(mfrow = c(1,4), mar = 0.1 + c(4, 3, 2, 0.5), cex.main = 1)
+
+
+```
+
+```{r figure 2, echo = FALSE}
 
 # Figure 2 Plot
+
+#cairo_pdf(filename = "../figs/scatters-alt.pdf", family = "Minion Pro", height = 2.5, width = 7, pointsize = 11)
+par(mfrow = c(1,4), mar = 0.1 + c(4, 3, 2, 0.5), cex.main = 1)
 
 plot(south.counties$pslave1860, south.counties$dem, pch = 19, col = "#33333333", xlab = "Proportion Slave, 1860", ylab = "", main = "Proportion Democrat", yaxt = "n", cex = south.counties$sample.size/100)
 axis(side = 2, las = 2)
@@ -212,9 +219,13 @@ axis(side = 2, las = 2)
 abline(lm(resent ~ pslave1860, data = south.counties, weights = sample.size.res), lwd = 2, col = "#AA0000")
 with(subset(nes.counties, state.abb %in% st.list), plot(pslave1860, wtherm-btherm, cex = sample.size.bt/40, pch = 19, col = "#33333333", xlab = "Proportion Slave, 1860", ylab = "", main = "White - Black Therm. Score", las = 1, xlim = c(0, 0.9)))
 abline(lm(I(wtherm-btherm) ~ pslave1860, weights = sample.size.bt, data = subset(nes.counties, state.abb %in% st.list)), lwd = 2, col = "#AA0000")
+
 #dev.off()
+
 ```
-```{r table1, echo = FALSE}
+
+
+```{r table1, echo = FALSE, include = FALSE}
 
 ## Tables
 
@@ -259,7 +270,6 @@ therm.1860 <- lm(update(base1860.form, therm.diff ~ . + state.abb*as.factor(year
 therm.1860.rse <- robust.se(therm.1860, clvar = "fips")
 therm.1860.rse
 
-
 ## for comparison with coefficient
 0.2*abs(coef(cnty.res.full)["pslave1860"])/sd(south.counties$dem, na.rm = TRUE)
 0.2*abs(coef(cnty.aff.full)["pslave1860"])/sd(south.counties$affirm, na.rm = TRUE)
@@ -276,6 +286,98 @@ tab1 <- gsub("\\{\\*\\*\\}", "\\{\\*\\}", tab1)
 tab1 <- gsub("\\{\\*\\*\\*\\}", "\\{\\*\\*\\}", tab1)
 tab1 <- tab1[-(length(tab1)-1)]
 
+```
+
+```{r table 1, echo = FALSE}
+
+# Create the dataframe which we will use to create the table
+
+m <- data.frame(matrix(0, ncol = 6, nrow = 9))
+
+m$X1 <- c("Proproportion slave, 1860", "_", "level", "1860 covariates", "State fixed effects", "State-year fixed effects", "Clustered SEs", "N", "R2")
+
+# Begin filling in the dataframe
+
+# I'm using the tidy function from the broom library to extract 
+# the estimate and the std error from the linear model and plug them
+# into the dataset
+
+m$X2[1] <- tidy(cnty.res)$estimate[2]
+m$X2[2] <- tidy(cnty.res)$std.error[2]
+
+m$X3[1] <- tidy(cnty.res.full)$estimate[2]
+m$X3[2] <- tidy(cnty.res.full)$std.error[2]
+
+m$X4[1] <- tidy(cnty.aff.full)$estimate[2]
+m$X4[2] <- tidy(cnty.aff.full)$std.error[2]
+
+m$X5[1] <- tidy(cnty.resent.full)$estimate[2]
+m$X5[2] <- tidy(cnty.resent.full)$std.error[2]
+
+# I am manually putting in the county value, as it does not depend on the data
+# rather where the data was sourced from
+
+m$X2[3] <- "County"
+m$X3[3] <- "County"
+m$X4[3] <- "County"
+m$X5[3] <- "County"
+
+# I can't figure out how to put check marks in, so I'm using X's
+
+m$X3[4] <- "X"
+m$X4[4] <- "X"
+m$X5[4] <- "X"
+m$X3[5] <- "X"
+m$X4[5] <- "X"
+m$X5[5] <- "X"
+m$X6[5] <- "X"
+m$X6[6] <- "X"
+m$X6[7] <- "X"
+
+# Calculating the n values.
+
+# The n values are the number of rows once NULL values are removed
+
+# For the first column of proportion democrat the model uses the 
+# variables # dem and pslave1860:
+
+m$X2[8] <- south.counties %>% 
+  
+  filter(!is.na(dem)) %>% 
+  
+  filter(!is.na(pslave1860)) %>% 
+  
+  filter(!is.na(state.abb)) %>% 
+  
+  nrow()
+
+# For the second column of the dta is uses the columns dem, pslave1860, and state.abb
+# I couldn't quite figure out how this value was calculated
+
+#m$X3[8] <- south.counties %>% 
+  
+#  filter(!is.na(dem)) %>% 
+  
+#  filter(!is.na(base1860.form)) %>% 
+  
+#  nrow()
+
+
+
+# At the moment, I still haven't found where the values for the last column came from
+
+m
+
+
+
+
+# gt(data = m, % decimals = 2)>% 
+  
+  # Add in the title of the table
+  
+#  tab_header(
+#    title = "Table 2. Covariate Balance across treatment conditions"
+#  ) %>% 
 
 ```
 
