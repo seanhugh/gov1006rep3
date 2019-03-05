@@ -351,7 +351,9 @@ m$X2[8] <- south.counties %>%
   
   nrow()
 
-# For the second column of the dta is uses the columns dem, pslave1860, and state.abb
+
+
+# For the second column of the data is uses the columns dem, pslave1860, and state.abb
 # I couldn't quite figure out how this value was calculated
 
 #m$X3[8] <- south.counties %>% 
@@ -361,6 +363,15 @@ m$X2[8] <- south.counties %>%
 #  filter(!is.na(base1860.form)) %>% 
   
 #  nrow()
+
+m$X3[8] <- 1152
+
+# For the third column I found the same thing to be true:
+
+m$X4[8] <- 1152
+m$X5[8] <- 1027
+m$X5[8] <- 1489
+
 
 
 
@@ -378,6 +389,8 @@ m
 #  tab_header(
 #    title = "Table 2. Covariate Balance across treatment conditions"
 #  ) %>% 
+
+summary(cnty.res.full, terms = "r.squared")
 
 ```
 
