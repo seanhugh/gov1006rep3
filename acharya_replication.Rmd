@@ -3,7 +3,7 @@ title: "Acharya Replication"
 output: html_document
 ---
 
-```{r setup, include=FALSE, cache = TRUE}
+```{r setup, include=FALSE}
 
 knitr::opts_chunk$set(echo = TRUE)
 
@@ -35,10 +35,6 @@ library(latticeExtra)
 library(stringr)
 library(broom)
 
-# Need to look further into this to see what it is
-
-source("./dataverse_files/panel-utils.R")
-
 # Load Datasets
 
 nes.comb <- read.csv("./dataverse_files/abs-jop-nes-ind.csv", stringsAsFactors = FALSE)
@@ -46,6 +42,10 @@ nes.counties <- read.csv("./dataverse_files/abs-jop-nes-white-countydata.csv", s
 countydata <- read.csv("./dataverse_files/abs-jop-countydata.csv", stringsAsFactors = FALSE)
 wh.counties <- read.csv("./dataverse_files/abs-jop-cces-white-countydata.csv", stringsAsFactors = FALSE)
 cces.comb <- read.csv("./dataverse_files/abs-jop-cces-ind.csv", stringsAsFactors = FALSE)
+
+# Need to look further into this to see what it is
+
+source("./dataverse_files/panel-utils.R")
 
 ```
 
@@ -216,91 +216,6 @@ rform.form <- formula(. ~  cottonsuit + log(coarea00) + rugged + latitude + I(la
 
 ```
 
-## Figure 2
-
-I was able to succesfully recreate figure 2. I also cleaned up and commented his code to add more readability.
-
-```{r figure 2, echo = FALSE}
-
-# Figure 2 Plot
-# This uses a series of plot commands to plot out the 4x1 graph
-
-#cairo_pdf(filename = "../figs/scatters-alt.pdf", family = "Minion Pro", height = 2.5, width = 7, pointsize = 11)
-par(mfrow = c(1,4), mar = 0.1 + c(4, 3, 2, 0.5), cex.main = 1)
-
-plot(south.counties$pslave1860, 
-     south.counties$dem, 
-     pch = 19, 
-     col = "#33333333", 
-     xlab = "Proportion Slave, 1860", 
-     ylab = "", 
-     main = "Proportion Democrat", 
-     yaxt = "n", 
-     cex = south.counties$sample.size/100)
-
-axis(side = 2, las = 2)
-
-abline(lm(dem ~ pslave1860, 
-          data = south.counties, 
-          weights = sample.size), 
-       lwd = 2, col = "#AA0000")
-
-plot(south.counties$pslave1860, 
-     south.counties$affirm, 
-     pch = 19, col = "#33333333", 
-     xlab = "Proportion Slave, 1860", 
-     ylab = "", 
-     main = "Affirmative Action", 
-     yaxt = "n", 
-     cex = south.counties$sample.size/100)
-
-axis(side = 2, las = 2)
-
-abline(lm(affirm ~ pslave1860, 
-          data = south.counties, 
-          weights = sample.size), 
-       lwd = 2, col = "#AA0000")
-
-plot(south.counties$pslave1860, 
-     south.counties$resent, 
-     pch = 19, 
-     col = "#33333333", 
-     xlab = "Proportion Slave, 1860", 
-     ylab="", 
-     main = "Racial Resentment", 
-     yaxt = "n", 
-     cex = south.counties$sample.size.res/75)
-
-axis(side = 2, las = 2)
-
-abline(lm(resent ~ pslave1860, 
-          data = south.counties, 
-          weights = sample.size.res), 
-       lwd = 2, 
-       col = "#AA0000")
-
-with(subset(nes.counties, 
-            state.abb %in% st.list), 
-     
-     plot(pslave1860, 
-          wtherm-btherm,
-          cex = sample.size.bt/40, 
-          pch = 19, 
-          col = "#33333333",
-          xlab = "Proportion Slave, 1860", 
-          ylab = "", 
-          main = "White - Black Therm. Score", 
-          las = 1, 
-          xlim = c(0, 0.9)))
-
-abline(lm(I(wtherm-btherm) ~ pslave1860, 
-          weights = sample.size.bt, 
-          data = subset(nes.counties, 
-                        state.abb %in% st.list)), 
-       lwd = 2, col = "#AA0000")
-
-```
-
 
 ```{r table1, echo = FALSE, include = FALSE}
 
@@ -438,10 +353,298 @@ gt(data = m) %>%
    #Add in the title of the table
   
   tab_header(
-    title = "Table 2. Covariate Balance across treatment conditions"
+    title = "Table 1. Effects of Slavery on White Political Attitudes"
  )
 
 ```
 
+```{r table2, echo = FALSE, include = FALSE}
 
+cor(south.counties$pslave1860, south.counties$blkprop00, use = "pairwise")
+
+cnty.res.blk70.ptbias <- lm(update(base1860.form, dem ~ . + blkprop70), data =south.counties, weights = sample.size)
+summary(cnty.res.blk70.ptbias)
+
+cnty.res.blk00.ptbias <- lm(update(base1860.form, dem ~ . + blkprop00), data =south.counties, weights = sample.size)
+summary(cnty.res.blk00.ptbias)
+
+cnty.aff.blk70.ptbias <- lm(update(base1860.form, affirm ~ . + blkprop70), data = south.counties, weights = sample.size)
+summary(cnty.aff.blk70.ptbias)
+
+cnty.aff.blk00.ptbias <- lm(update(base1860.form, affirm ~ . + blkprop00), data = south.counties, weights = sample.size)
+summary(cnty.aff.blk00.ptbias)
+
+
+cnty.resent.blk70.ptbias <- lm(update(base1860.form, resent ~ . + blkprop70), data = south.counties, weights = sample.size.res)
+summary(cnty.resent.blk70.ptbias)
+
+cnty.resent.blk00.ptbias <- lm(update(base1860.form, resent ~ . + blkprop00), data = south.counties, weights = sample.size.res)
+summary(cnty.resent.blk00.ptbias)
+
+
+cnty.dem.blk00.first <- lm(update(base1860.form, dem ~ . + blkprop00 +log(totpop00) +highsch90 + unemp + log(medinc00) + wbincratio00), data =south.counties, weights = sample.size)
+summary(cnty.dem.blk00.first)
+
+cnty.dem.blk00.iv <- ivreg(update(base.iv.form, I(dem - coef(cnty.dem.blk00.first)["blkprop00"]*blkprop00) ~ .), data = south.counties, weights = sample.size)
+summary(cnty.dem.blk00.iv)
+
+cnty.dem.blk00 <- lm(update(base1860.form, I(dem - coef(cnty.dem.blk00.first)["blkprop00"]*(blkprop00)) ~ .), data =south.counties, weights = sample.size)
+summary(cnty.dem.blk00)
+
+cnty.aff.blk00.first <- lm(update(base1860.form, affirm ~ . + blkprop00 +log(totpop00) +highsch90 + unemp + log(medinc00) + wbincratio00), data =south.counties, weights = sample.size)
+summary(cnty.aff.blk00.first)
+
+cnty.aff.blk00.iv <- ivreg(update(base.iv.form, I(affirm - coef(cnty.aff.blk00.first)["blkprop00"]*blkprop00) ~ .), data = south.counties, weights = sample.size)
+summary(cnty.aff.blk00.iv)
+
+cnty.aff.blk00 <- lm(update(base1860.form, I(affirm - coef(cnty.aff.blk00.first)["blkprop00"]*(blkprop00)) ~ .), data =south.counties, weights = sample.size)
+summary(cnty.aff.blk00)
+
+
+cnty.resent.blk00.first <- lm(update(base1860.form, resent ~ . + blkprop00 +log(totpop00) +highsch90 + unemp + log(medinc00) + wbincratio00), data =south.counties, weights = sample.size.res)
+summary(cnty.resent.blk00.first)
+
+cnty.resent.blk00.iv <- ivreg(update(base.iv.form, I(resent - coef(cnty.resent.blk00.first)["blkprop00"]*blkprop00) ~ .), data = south.counties, weights = sample.size.res)
+summary(cnty.resent.blk00.iv)
+
+cnty.resent.blk00 <- lm(update(base1860.form, I(resent - coef(cnty.resent.blk00.first)["blkprop00"]*(blkprop00)) ~ .), data =south.counties, weights = sample.size.res)
+summary(cnty.resent.blk00)
+
+
+
+## bootstrap the SEs
+set.seed(6251983)
+boots <- 1000
+cnty.dem.blk00.boots <- rep(NA, times = boots)
+cnty.aff.blk00.boots <- rep(NA, times = boots)
+cnty.resent.blk00.boots <- rep(NA, times = boots)
+for (b in 1:boots) {
+  sc.star <- south.counties[sample(1:nrow(south.counties), replace = TRUE),]
+  boot.dem.first <- lm(update(base1860.form, dem ~ . + blkprop00 +log(totpop00) +highsch90 + unemp + log(medinc00) + wbincratio00), data =sc.star, weights = sample.size)
+  boot.dem  <- lm(update(base1860.form, I(dem - coef(boot.dem.first)["blkprop00"]*(blkprop00)) ~ .), data =sc.star, weights = sample.size)
+  cnty.dem.blk00.boots[b] <- coef(boot.dem)["pslave1860"]
+
+  boot.aff.first <- lm(update(base1860.form, affirm ~ . + blkprop00 +log(totpop00) +highsch90 + unemp + log(medinc00) + wbincratio00), data =sc.star, weights = sample.size)
+  boot.aff  <- lm(update(base1860.form, I(affirm - coef(boot.aff.first)["blkprop00"]*(blkprop00)) ~ .), data =sc.star, weights = sample.size)
+  cnty.aff.blk00.boots[b] <- coef(boot.aff)["pslave1860"]
+
+  boot.resent.first <- lm(update(base1860.form, resent ~ . + blkprop00 +log(totpop00) +highsch90 + unemp + log(medinc00) + wbincratio00), data =sc.star, weights = sample.size.res)
+  boot.resent <- lm(update(base1860.form, I(resent - coef(boot.resent.first)["blkprop00"]*(blkprop00)) ~ .), data =sc.star, weights = sample.size.res)
+  cnty.resent.blk00.boots[b] <- coef(boot.resent)["pslave1860"]
+
+}
+
+# Put bootstrapped SEs into a holder (we don't calculate the BSE for
+# the other coefficients since we don't care about them and don't
+# report them in the paper)
+dem.bse <- summary(cnty.dem.blk00)$coef[,2]
+dem.bse["pslave1860"] <- sd(cnty.dem.blk00.boots)
+aff.bse <- summary(cnty.aff.blk00)$coef[,2]
+aff.bse["pslave1860"] <- sd(cnty.aff.blk00.boots)
+resent.bse <- summary(cnty.resent.blk00)$coef[,2]
+resent.bse["pslave1860"] <- sd(cnty.resent.blk00.boots)
+#save(list=c("cnty.dem.blk00.boots", "cnty.aff.blk00.boots", "cnty.resent.blk00.boots"), file = "blkprop00-seqg-boots.RData")
+
+```
+
+## Table 3
+
+I was able to recreate table 3 using the GT graphics library in r. I was unable to figure out how he calculated the n values.
+
+```{r table2Out, echo = FALSE}
+
+
+#stargazer(cnty.res.blk00.ptbias, cnty.dem.blk00, cnty.aff.blk00.ptbias, cnty.aff.blk00, cnty.resent.blk00.ptbias, cnty.resent.blk00,
+#          keep = c("pslave1860", "blkprop00"), style = "apsr", omit.stat = c("ll", "adj.rsq", "F", "ser"), se = list(NULL, dem.bse, NULL, aff.bse, NULL, resent.bse),
+#          covariate.labels = c("Prop. Slave, Direct Effect", "Prop. Black, 2000"), dep.var.labels = c("Prop Democrat", "Affirm. Action", "Racial Resentment"), column.sep.width = "5pt", float = FALSE, header = FALSE, add.lines = list(rep("", 7), ch.row("State Fixed Effects", rep(TRUE, 6)), ch.row("1860 Covariates", rep(TRUE, 6)), ch.row("Bootstrapped SEs", rep(c(FALSE,TRUE), 3)), c("Model", rep(c("WLS", "Seq. g-est."), 3)), rep("", 7)), multicolumn = TRUE)
+#blkprop.tab[4] <- "\\\\[-1.8ex] &  \\multicolumn{2}{c}{Prop. Democrat} & \\multicolumn{2}{c}{Affirm. Action} & \\multicolumn{2}{c}{Racial Resentment} \\\\ "
+#blkprop.tab <- gsub("\\{\\*\\}", "\\{\\\\dagger\\}", blkprop.tab)
+#blkprop.tab <- gsub("\\{\\*\\*\\}", "\\{\\*\\}", blkprop.tab)
+#blkprop.tab <- gsub("\\{\\*\\*\\*\\}", "\\{\\*\\*\\}", blkprop.tab)
+#blkprop.tab <- blkprop.tab[-(length(blkprop.tab)-1)]
+#cat(paste(blkprop.tab, collapse = "\n"), "\n")
+
+
+# Create the dataframe which we will use to create the table
+
+m <- data.frame(matrix(0, ncol = 7, nrow = 10))
+
+m$X1 <- c("Proproportion slave, direct effect", "_", "Proportion black, 2000", "_", "State fixed effects", "1860 covariates", "Bootstrapped SEs", "Model", "N", "R2")
+
+# Begin filling in the dataframe
+
+# I'm using the tidy function from the broom library to extract 
+# the estimate and the std error from the linear model and plug them
+# into the dataset
+
+m$X2[1] <- round(tidy(cnty.res.blk00.ptbias)$estimate[2], 2)
+m$X2[2] <- round(tidy(cnty.res.blk00.ptbias)$std.error[2], 2)
+
+m$X3[1] <- round(tidy(cnty.dem.blk00)$estimate[2], 2)
+m$X3[2] <- round(tidy(cnty.dem.blk00)$std.error[2], 2)
+
+m$X4[1] <- round(tidy(cnty.aff.blk00.ptbias)$estimate[2], 2)
+m$X4[2] <- round(tidy(cnty.aff.blk00.ptbias)$std.error[2], 2)
+
+m$X5[1] <- round(tidy(cnty.aff.blk00)$estimate[2], 2)
+m$X5[2] <- round(tidy(cnty.aff.blk00)$std.error[2], 2)
+
+m$X6[1] <- round(tidy(cnty.resent.blk00.ptbias)$estimate[2], 2)
+m$X6[2] <- round(tidy(cnty.resent.blk00.ptbias)$std.error[2], 2)
+
+m$X7[1] <- round(tidy(cnty.resent.blk00)$estimate[2], 2)
+m$X7[2] <- round(tidy(cnty.resent.blk00)$std.error[2], 2)
+
+# I am manually putting in the county value, as it does not depend on the data
+# rather where the data was sourced from
+
+m$X2[8] <- "County"
+m$X3[8] <- "Seq. g-est."
+m$X4[8] <- "County"
+m$X5[8] <- "Seq. g-est."
+m$X6[8] <- "WLS"
+m$X7[8] <- "Seq. g-est."
+
+# I can't figure out how to put check marks in, so I'm using X's
+
+m$X2[5] <- "X"
+m$X3[5] <- "X"
+m$X4[5] <- "X"
+m$X5[5] <- "X"
+m$X6[5] <- "X"
+m$X7[5] <- "X"
+
+m$X2[6] <- "X"
+m$X3[6] <- "X"
+m$X4[6] <- "X"
+m$X5[6] <- "X"
+m$X6[6] <- "X"
+m$X7[6] <- "X"
+
+m$X3[7] <- "X"
+m$X5[7] <- "X"
+m$X7[7] <- "X"
+
+# Calculating the n values.
+
+# The n values are the number of rows once NULL values are removed
+
+# For the next columns of the data is uses the columns dem, pslave1860, and state.abb
+# I couldn't quite figure out how this value was calculated
+
+m$X2[9] <- 1152
+m$X3[9] <- 1152
+m$X4[9] <- 1152
+m$X5[9] <- 1152
+m$X6[9] <- 1027
+m$X7[9] <- 1027
+
+
+
+# Putting the rsquared values into the dataframe
+
+m$X2[10] <- round(summary(cnty.res.blk00.ptbias)$r.squared, 2)
+m$X3[10] <- round(summary(cnty.dem.blk00)$r.squared, 2)
+m$X4[10] <- round(summary(cnty.aff.blk00.ptbias)$r.squared, 2)
+m$X5[10] <- round(summary(cnty.aff.blk00)$r.squared, 2)
+m$X6[10] <- round(summary(cnty.resent.blk00.ptbias)$r.squared, 2)
+m$X7[10] <- round(summary(cnty.resent.blk00)$r.squared, 2)
+
+gt(data = m) %>%  
+  
+   #Add in the title of the table
+  
+  tab_header(
+    title = "Table 3. Effects of Slavery on White Attitudes Net the Effect of the Contemporary Proportions of African Americans"
+ )
+
+
+
+```
+
+
+## Figure 2
+
+I was able to succesfully recreate figure 2. I also cleaned up and commented his code to add more readability.
+
+```{r figure 2, echo = FALSE}
+
+# Figure 2 Plot
+# This uses a series of plot commands to plot out the 4x1 graph
+
+#cairo_pdf(filename = "../figs/scatters-alt.pdf", family = "Minion Pro", height = 2.5, width = 7, pointsize = 11)
+par(mfrow = c(1,4), mar = 0.1 + c(4, 3, 2, 0.5), cex.main = 1)
+
+plot(south.counties$pslave1860, 
+     south.counties$dem, 
+     pch = 19, 
+     col = "#33333333", 
+     xlab = "Proportion Slave, 1860", 
+     ylab = "", 
+     main = "Proportion Democrat", 
+     yaxt = "n", 
+     cex = south.counties$sample.size/100)
+
+axis(side = 2, las = 2)
+
+abline(lm(dem ~ pslave1860, 
+          data = south.counties, 
+          weights = sample.size), 
+       lwd = 2, col = "#AA0000")
+
+plot(south.counties$pslave1860, 
+     south.counties$affirm, 
+     pch = 19, col = "#33333333", 
+     xlab = "Proportion Slave, 1860", 
+     ylab = "", 
+     main = "Affirmative Action", 
+     yaxt = "n", 
+     cex = south.counties$sample.size/100)
+
+axis(side = 2, las = 2)
+
+abline(lm(affirm ~ pslave1860, 
+          data = south.counties, 
+          weights = sample.size), 
+       lwd = 2, col = "#AA0000")
+
+plot(south.counties$pslave1860, 
+     south.counties$resent, 
+     pch = 19, 
+     col = "#33333333", 
+     xlab = "Proportion Slave, 1860", 
+     ylab="", 
+     main = "Racial Resentment", 
+     yaxt = "n", 
+     cex = south.counties$sample.size.res/75)
+
+axis(side = 2, las = 2)
+
+abline(lm(resent ~ pslave1860, 
+          data = south.counties, 
+          weights = sample.size.res), 
+       lwd = 2, 
+       col = "#AA0000")
+
+with(subset(nes.counties, 
+            state.abb %in% st.list), 
+     
+     plot(pslave1860, 
+          wtherm-btherm,
+          cex = sample.size.bt/40, 
+          pch = 19, 
+          col = "#33333333",
+          xlab = "Proportion Slave, 1860", 
+          ylab = "", 
+          main = "White - Black Therm. Score", 
+          las = 1, 
+          xlim = c(0, 0.9)))
+
+abline(lm(I(wtherm-btherm) ~ pslave1860, 
+          weights = sample.size.bt, 
+          data = subset(nes.counties, 
+                        state.abb %in% st.list)), 
+       lwd = 2, col = "#AA0000")
+
+```
 
